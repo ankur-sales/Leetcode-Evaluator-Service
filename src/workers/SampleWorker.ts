@@ -3,7 +3,7 @@ import redisConnection from '../config/redisConfig';
 import SampleJob from '../jobs/Samplejob';
 
 export default function SampleWorker(queueName: string) {
-    console.log("setup the connection for redis", redisConnection);
+    // console.log("setup the connection for redis", redisConnection);
 
     new Worker(queueName, async (job: Job) => {
         // process your job here
