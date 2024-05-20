@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { ZodSchema } from 'zod';
-import { CreateSubmissionDto } from '../dtos/CreateSubmissionDto';
 
 export const validate = (schema: ZodSchema<any>) => (req: Request, res: Response, next: NextFunction) => {
 
