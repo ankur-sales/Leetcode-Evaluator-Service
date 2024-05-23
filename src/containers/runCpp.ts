@@ -1,29 +1,31 @@
 
 import createContainer from './containerFactory';
-import { PYTHON_IMAGE } from '../utils/constants';
+import { CPP_IMAGE } from '../utils/constants';
 import decodeDockerStream from './dockerHelper';
+import pullImage from './pullImage';
 
 
-async function runPython(code: string, inputTestCase: string) {
+async function runCpp(code: string, inputTestCase: string) {
 
     const rawLogBuffer: Buffer[] = [];
 
-    console.log("Intiailzing a new python docker container");
+    console.log("Intiailzing a new cpp docker container");
 
-    // const pythonDockerContainer = await createContainer(PYTHON_IMAGE, ['python3', '-c', code, 'stty -echo']);
+    await pullImage(CPP_IMAGE);
+    // const pythonDockerContainer = await createContainer(JAVA_IMAGE, ['python3', '-c', code, 'stty -echo']);
 
-    const runCommand = `echo '${code.replace(/'/g, `'\\"`)}' > test.py && echo '${inputTestCase.replace(/'/g, `'\\"`)}' | python3 test.py`;
+    const runCommand = `echo '${code.replace(/'/g, `'\\"`)}' > main.cpp && g++ main.cpp -o main && echo '${inputTestCase.replace(/'/g, `'\\"`)}' | stdbuf -oL -eL ./main`;
     console.log(runCommand);
 
 
-    const pythonDockerContainer = await createContainer(PYTHON_IMAGE, ['/bin/sh', '-c', runCommand]);
+    const CppDockerContainer = await createContainer(CPP_IMAGE, ['/bin/sh', '-c', runCommand]);
 
 
-    await pythonDockerContainer.start();// starting the corrosponding docker containner 
+    await CppDockerContainer.start();// starting the corrosponding docker containner 
 
     console.log("Started the docker container");
 
-    const loggerStream = await pythonDockerContainer.logs({
+    const loggerStream = await CppDockerContainer.logs({
         stdout: true,
         stderr: true,
         timestamps: false,
@@ -49,10 +51,10 @@ async function runPython(code: string, inputTestCase: string) {
     });
 
     // remove the container
-    await pythonDockerContainer.remove();
+    await CppDockerContainer.remove();
 
     // return pythonDockerContainer;
 
 }
 
-export default runPython;
+export default runCpp;
