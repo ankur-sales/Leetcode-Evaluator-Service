@@ -1,30 +1,30 @@
 
 import createContainer from './containerFactory';
-import { JAVA_IMAGE } from '../utils/constants';
+import { PYTHON_IMAGE } from '../utils/constants';
 import decodeDockerStream from './dockerHelper';
-import CodeExecutorStrategy, { ExecutionResponse } from '../types/codeExecutorStrategy';
+import CodeExecutorStrategy , {ExecutionResponse} from '../types/codeExecutorStrategy';
 
 
-class JavaExecutor implements CodeExecutorStrategy {
-   async execute(code: string, inputTestCase: string): Promise<ExecutionResponse> {
+class PythonExecutor implements CodeExecutorStrategy {
+    async execute(code: string, inputTestCase: string): Promise<ExecutionResponse> {
         const rawLogBuffer: Buffer[] = [];
 
         console.log("Intiailzing a new python docker container");
     
-        // const pythonDockerContainer = await createContainer(JAVA_IMAGE, ['python3', '-c', code, 'stty -echo']);
+        // const pythonDockerContainer = await createContainer(PYTHON_IMAGE, ['python3', '-c', code, 'stty -echo']);
     
-        const runCommand = `echo '${code.replace(/'/g, `'\\"`)}' > Main.java && javac Main.java && echo '${inputTestCase.replace(/'/g, `'\\"`)}' | java Main`;
+        const runCommand = `echo '${code.replace(/'/g, `'\\"`)}' > test.py && echo '${inputTestCase.replace(/'/g, `'\\"`)}' | python3 test.py`;
         console.log(runCommand);
     
     
-        const javaDockerContainer = await createContainer(JAVA_IMAGE, ['/bin/sh', '-c', runCommand]);
+        const pythonDockerContainer = await createContainer(PYTHON_IMAGE, ['/bin/sh', '-c', runCommand]);
     
     
-        await javaDockerContainer.start();// starting the corrosponding docker containner 
+        await pythonDockerContainer.start();// starting the corrosponding docker containner 
     
         console.log("Started the docker container");
     
-        const loggerStream = await javaDockerContainer.logs({
+        const loggerStream = await pythonDockerContainer.logs({
             stdout: true,
             stderr: true,
             timestamps: false,
@@ -36,22 +36,20 @@ class JavaExecutor implements CodeExecutorStrategy {
         loggerStream.on('data', (chunk) => {
             rawLogBuffer.push(chunk);
         });
-    
-        try{
-            const codeResponse: string = await this.fetchDecodedStream(loggerStream,rawLogBuffer);
-            return {output: codeResponse, status: "COMPLETED"};
-    
-        }catch(error){
-                return {output: error as string , status: "ERROR"}
-        }finally{
-            await javaDockerContainer.remove();
-    
-        }
-    
+    try{
+        const codeResponse: string = await this.fetchDecodedStream(loggerStream,rawLogBuffer);
+        return {output: codeResponse, status: "COMPLETED"};
+
+    }catch(error){
+            return {output: error as string , status: "ERROR"}
+    }finally{
+        await pythonDockerContainer.remove();
+
+    }
+
     }
 
     fetchDecodedStream(loggerStream:NodeJS.ReadableStream, rawLogBuffer: Buffer[]): Promise <string>{
-        // Todo : may be move this function in to javaHelper.ts file
         return new Promise((res, rej) => {
             loggerStream.on('end', () => {
                 console.log(rawLogBuffer);
@@ -71,8 +69,7 @@ class JavaExecutor implements CodeExecutorStrategy {
         });
 
     }
-
 }
 
 
-export default JavaExecutor;
+export default PythonExecutor;
